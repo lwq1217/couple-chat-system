@@ -2,7 +2,13 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
-const dbPath = path.join(__dirname, 'couple_chat.db');
+// 支持通过环境变量配置数据库路径（用于 Railway Volume 持久化）
+const dbPath = process.env.DATABASE_PATH 
+  ? process.env.DATABASE_PATH 
+  : path.join(__dirname, 'couple_chat.db');
+
+console.log('📁 数据库路径:', dbPath);
+
 const db = new sqlite3.Database(dbPath);
 
 db.serialize(() => {
