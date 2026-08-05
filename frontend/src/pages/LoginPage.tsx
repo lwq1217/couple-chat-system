@@ -49,8 +49,8 @@ export default function LoginPage() {
           >
             <Heart className="w-16 h-16 text-love-pink mx-auto mb-4" fill="#FF6B9D" />
           </motion.div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">欢迎回来 💕</h1>
-          <p className="text-gray-500">登录进入你们的小世界</p>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">欢迎回来李孟秋 💕</h1>
+          <p className="text-gray-500">登录进入咱们的小世界吧</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
