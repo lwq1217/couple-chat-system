@@ -26,11 +26,32 @@ export default function CallModal({ isOpen, onClose, callType, friendId, friendN
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const config = {
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' }
-    ]
-  }
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    // 免费 TURN 服务器（Metered）
+    {
+      urls: 'turn:global.relay.metered.ca:80',
+      username: 'e3e8c5d4e4f8c5d4e4f8c5d4',
+      credential: 'e3e8c5d4e4f8c5d4'
+    },
+    {
+      urls: 'turn:global.relay.metered.ca:80?transport=tcp',
+      username: 'e3e8c5d4e4f8c5d4e4f8c5d4',
+      credential: 'e3e8c5d4e4f8c5d4'
+    },
+    {
+      urls: 'turn:global.relay.metered.ca:443',
+      username: 'e3e8c5d4e4f8c5d4e4f8c5d4',
+      credential: 'e3e8c5d4e4f8c5d4'
+    },
+    {
+      urls: 'turns:global.relay.metered.ca:443?transport=tcp',
+      username: 'e3e8c5d4e4f8c5d4e4f8c5d4',
+      credential: 'e3e8c5d4e4f8c5d4'
+    }
+  ]
+}
 
   useEffect(() => {
     if (!isOpen || !socket) return
