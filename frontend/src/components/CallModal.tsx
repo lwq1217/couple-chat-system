@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Phone, Video, PhoneOff, Mic, MicOff, VideoOff, Heart } from 'lucide-react'
+import { Phone, Video, PhoneOff, Mic, MicOff, VideoOff } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useSocket } from '../hooks/useSocket'
 
@@ -10,11 +10,12 @@ interface CallModalProps {
   callType: 'voice' | 'video'
   friendId: number
   friendName: string
+  incomingCall?: { callerId: number, type: string, offer: any } | null
 }
 
-export default function CallModal({ isOpen, onClose, callType, friendId, friendName }: CallModalProps) {
+export default function CallModal({ isOpen, onClose, callType, friendId, friendName, incomingCall }: CallModalProps) {
   const { user } = useAuth()
-  const { socket, sendCallOffer, sendCallAnswer, sendIceCandidate, endCall } = useSocket(user?.id)
+  const { socket, sendCallOffer, sendCallAnswer, sendIceCandidate, endCall, rejectCall } = useSocket(user?.id)
   const [callState, setCallState] = useState<'calling' | 'connected' | 'ended'>('calling')
   const [duration, setDuration] = useState(0)
   const [isMuted, setIsMuted] = useState(false)
@@ -26,32 +27,31 @@ export default function CallModal({ isOpen, onClose, callType, friendId, friendN
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const config = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    // 免费 TURN 服务器（Metered）
-    {
-      urls: 'turn:global.relay.metered.ca:80',
-      username: 'e3e8c5d4e4f8c5d4e4f8c5d4',
-      credential: 'e3e8c5d4e4f8c5d4'
-    },
-    {
-      urls: 'turn:global.relay.metered.ca:80?transport=tcp',
-      username: 'e3e8c5d4e4f8c5d4e4f8c5d4',
-      credential: 'e3e8c5d4e4f8c5d4'
-    },
-    {
-      urls: 'turn:global.relay.metered.ca:443',
-      username: 'e3e8c5d4e4f8c5d4e4f8c5d4',
-      credential: 'e3e8c5d4e4f8c5d4'
-    },
-    {
-      urls: 'turns:global.relay.metered.ca:443?transport=tcp',
-      username: 'e3e8c5d4e4f8c5d4e4f8c5d4',
-      credential: 'e3e8c5d4e4f8c5d4'
-    }
-  ]
-}
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      {
+        urls: 'turn:global.relay.metered.ca:80',
+        username: 'e3e8c5d4e4f8c5d4e4f8c5d4',
+        credential: 'e3e8c5d4e4f8c5d4'
+      },
+      {
+        urls: 'turn:global.relay.metered.ca:80?transport=tcp',
+        username: 'e3e8c5d4e4f8c5d4e4f8c5d4',
+        credential: 'e3e8c5d4e4f8c5d4'
+      },
+      {
+        urls: 'turn:global.relay.metered.ca:443',
+        username: 'e3e8c5d4e4f8c5d4e4f8c5d4',
+        credential: 'e3e8c5d4e4f8c5d4'
+      },
+      {
+        urls: 'turns:global.relay.metered.ca:443?transport=tcp',
+        username: 'e3e8c5d4e4f8c5d4e4f8c5d4',
+        credential: 'e3e8c5d4e4f8c5d4'
+      }
+    ]
+  }
 
   useEffect(() => {
     if (!isOpen || !socket) return
@@ -86,9 +86,19 @@ export default function CallModal({ isOpen, onClose, callType, friendId, friendN
           }
         }
 
-        const offer = await pc.createOffer()
-        await pc.setLocalDescription(offer)
-        sendCallOffer({ callerId: user?.id, receiverId: friendId, type: callType, offer })
+        // 如果是被动接听（收到对方呼叫）
+        if (incomingCall && incomingCall.offer) {
+          setCallState('calling')
+          await pc.setRemoteDescription(new RTCSessionDescription(incomingCall.offer))
+          const answer = await pc.createAnswer()
+          await pc.setLocalDescription(answer)
+          sendCallAnswer({ callerId: incomingCall.callerId, answer })
+        } else {
+          // 主动呼叫
+          const offer = await pc.createOffer()
+          await pc.setLocalDescription(offer)
+          sendCallOffer({ callerId: user?.id, receiverId: friendId, type: callType, offer })
+        }
       } catch (err) {
         console.error('获取媒体失败:', err)
         alert('无法访问摄像头/麦克风')
@@ -98,33 +108,38 @@ export default function CallModal({ isOpen, onClose, callType, friendId, friendN
 
     initCall()
 
-    socket.on('call_answer', async ({ answer }: any) => {
+    const handleAnswer = async ({ answer }: any) => {
       await peerConnectionRef.current?.setRemoteDescription(new RTCSessionDescription(answer))
       setCallState('connected')
       timerRef.current = setInterval(() => setDuration(d => d + 1), 1000)
-    })
+    }
 
-    socket.on('call_ice_candidate', async ({ candidate }: any) => {
+    const handleIceCandidate = async ({ candidate }: any) => {
       await peerConnectionRef.current?.addIceCandidate(new RTCIceCandidate(candidate))
-    })
+    }
 
-    socket.on('call_end', () => {
+    const handleEnd = () => {
       endCurrentCall()
-    })
+    }
 
-    socket.on('call_rejected', () => {
+    const handleReject = () => {
       alert('对方拒绝了通话')
       endCurrentCall()
-    })
+    }
+
+    socket.on('call_answer', handleAnswer)
+    socket.on('call_ice_candidate', handleIceCandidate)
+    socket.on('call_end', handleEnd)
+    socket.on('call_rejected', handleReject)
 
     return () => {
       endCurrentCall()
-      socket.off('call_answer')
-      socket.off('call_ice_candidate')
-      socket.off('call_end')
-      socket.off('call_rejected')
+      socket.off('call_answer', handleAnswer)
+      socket.off('call_ice_candidate', handleIceCandidate)
+      socket.off('call_end', handleEnd)
+      socket.off('call_rejected', handleReject)
     }
-  }, [isOpen, socket, callType, friendId])
+  }, [isOpen, socket, callType, friendId, incomingCall])
 
   const endCurrentCall = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current)
@@ -198,9 +213,13 @@ export default function CallModal({ isOpen, onClose, callType, friendId, friendN
           </motion.div>
 
           <h2 className="text-2xl font-bold text-white mb-2">{friendName}</h2>
-
-          {callState === 'calling' && (
+          
+          {callState === 'calling' && !incomingCall && (
             <p className="text-white/70 mb-8">正在呼叫...</p>
+          )}
+          
+          {callState === 'calling' && incomingCall && (
+            <p className="text-white/70 mb-8">来电中...</p>
           )}
 
           {callState === 'connected' && (
@@ -221,7 +240,7 @@ export default function CallModal({ isOpen, onClose, callType, friendId, friendN
               >
                 {isMuted ? <MicOff className="w-6 h-6 text-white" /> : <Mic className="w-6 h-6 text-white" />}
               </button>
-
+              
               {callType === 'video' && (
                 <button
                   onClick={toggleVideo}
@@ -233,13 +252,40 @@ export default function CallModal({ isOpen, onClose, callType, friendId, friendN
             </>
           )}
 
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={handleEndCall}
-            className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-lg shadow-red-500/50"
-          >
-            <PhoneOff className="w-8 h-8 text-white" />
-          </motion.button>
+          {incomingCall && callState === 'calling' && (
+            <>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => {
+                  setCallState('connected')
+                  timerRef.current = setInterval(() => setDuration(d => d + 1), 1000)
+                }}
+                className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center shadow-lg"
+              >
+                <Phone className="w-8 h-8 text-white" />
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => {
+                  rejectCall({ callerId: incomingCall.callerId })
+                  endCurrentCall()
+                }}
+                className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-lg"
+              >
+                <PhoneOff className="w-8 h-8 text-white" />
+              </motion.button>
+            </>
+          )}
+
+          {!incomingCall && (
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handleEndCall}
+              className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-lg shadow-red-500/50"
+            >
+              <PhoneOff className="w-8 h-8 text-white" />
+            </motion.button>
+          )}
         </div>
       </motion.div>
     </AnimatePresence>
