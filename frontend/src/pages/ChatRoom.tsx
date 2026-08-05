@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Phone, Video, Image, Send, Smile, Paperclip, Mic, X, Heart } from 'lucide-react'
+import { ArrowLeft, Phone, Video, Image, Send, Smile, Paperclip } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import EmojiPicker from 'emoji-picker-react'
 import { api, formatTime } from '../utils/api'
@@ -56,46 +56,50 @@ export default function ChatRoom() {
   useEffect(() => {
     if (!socket) return
 
-    socket.on('receive_message', (msg: Message) => {
+    const handleReceiveMessage = (msg: Message) => {
       if (msg.sender_id === friendIdNum || msg.receiver_id === friendIdNum) {
         setMessages(prev => [...prev, msg])
       }
-    })
+    }
 
-    socket.on('typing', ({ senderId }: { senderId: number }) => {
+    const handleTyping = ({ senderId }: { senderId: number }) => {
       if (senderId === friendIdNum) setIsTyping(true)
-    })
+    }
 
-    socket.on('stop_typing', ({ senderId }: { senderId: number }) => {
+    const handleStopTyping = ({ senderId }: { senderId: number }) => {
       if (senderId === friendIdNum) setIsTyping(false)
-    })
-////
-      const handleCallOffer = ({ callerId, type, offer }: any) => {
+    }
+
+    const handleCallOffer = ({ callerId, type, offer }: any) => {
       if (callerId === friendIdNum) {
         setIncomingCall({ callerId, type, offer })
         setCallType(type)
         setShowCallModal(true)
       }
     }
-    socket.on('call_offer', handleCallOffer)
 
     const handleCallEnd = () => {
       setShowCallModal(false)
       setIncomingCall(null)
     }
-    socket.on('call_end', handleCallEnd)
 
     const handleCallRejected = () => {
       alert('对方拒绝了通话')
       setShowCallModal(false)
       setIncomingCall(null)
     }
+
+    socket.on('receive_message', handleReceiveMessage)
+    socket.on('typing', handleTyping)
+    socket.on('stop_typing', handleStopTyping)
+    socket.on('call_offer', handleCallOffer)
+    socket.on('call_end', handleCallEnd)
     socket.on('call_rejected', handleCallRejected)
 
     return () => {
-      socket.off('receive_message')
-      socket.off('typing')
-      socket.off('stop_typing')
+      socket.off('receive_message', handleReceiveMessage)
+      socket.off('typing', handleTyping)
+      socket.off('stop_typing', handleStopTyping)
       socket.off('call_offer', handleCallOffer)
       socket.off('call_end', handleCallEnd)
       socket.off('call_rejected', handleCallRejected)
@@ -177,6 +181,7 @@ export default function ChatRoom() {
 
   const startCall = (type: 'voice' | 'video') => {
     setCallType(type)
+    setIncomingCall(null)
     setShowCallModal(true)
   }
 
@@ -184,7 +189,6 @@ export default function ChatRoom() {
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-love-cream to-white">
-      {/* 头部 */}
       <div className="glass-card mx-4 mt-4 px-4 py-3 flex items-center gap-3 z-10">
         <button onClick={() => navigate('/chat')} className="p-1 hover:bg-gray-100 rounded-full transition-colors">
           <ArrowLeft size={22} className="text-gray-600" />
@@ -215,7 +219,6 @@ export default function ChatRoom() {
         </button>
       </div>
 
-      {/* 消息区域 */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {messages.map((msg, index) => {
           const myMsg = isMyMessage(msg)
@@ -263,7 +266,6 @@ export default function ChatRoom() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 输入区域 */}
       <div className="glass-card mx-4 mb-2 p-3">
         <AnimatePresence>
           {showEmoji && (
@@ -322,7 +324,6 @@ export default function ChatRoom() {
         </div>
       </div>
 
-      {/* 通话弹窗 */}
       <CallModal 
         isOpen={showCallModal} 
         onClose={() => { setShowCallModal(false); setIncomingCall(null) }}
