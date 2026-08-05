@@ -62,11 +62,11 @@ io.on('connection', (socket) => {
 
   // 用户上线
   socket.on('user_online', ({ userId }) => {
-    onlineUsers.set(userId, socket.id);
+    onlineUsers.set(String(userId), socket.id);
     socket.userId = userId;
     console.log(`用户 ${userId} 上线`);
     // 通知好友上线状态
-    io.emit('user_status', { userId, status: 'online' });
+    io.emit('user_status', { userId: String(userId), status: 'online' });
   });
 
   // 发送消息
@@ -158,8 +158,8 @@ io.on('connection', (socket) => {
   // 断开连接
   socket.on('disconnect', () => {
     if (socket.userId) {
-      onlineUsers.delete(socket.userId);
-      io.emit('user_status', { userId: socket.userId, status: 'offline' });
+      onlineUsers.delete(String(socket.userId));
+      io.emit('user_status', { userId: String(socket.userId), status: 'offline' });
       console.log(`用户 ${socket.userId} 下线`);
     }
   });
