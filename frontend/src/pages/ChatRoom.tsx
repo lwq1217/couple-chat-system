@@ -28,7 +28,8 @@ interface FriendInfo {
 }
 
 export default function ChatRoom() {
-  const { friendId } = useParams<{ friendId: string }>
+  const params = useParams()
+  const friendId = params.friendId
   const navigate = useNavigate()
   const { user } = useAuth()
   const friendIdNum = parseInt(friendId || '0')
@@ -38,7 +39,7 @@ export default function ChatRoom() {
   const [friend, setFriend] = useState<FriendInfo | null>(null)
   const [showEmoji, setShowEmoji] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
-  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [typingTimeout, setTypingTimeout] = useState<ReturnType<typeof setTimeout> | null>(null)
   const [showCallModal, setShowCallModal] = useState(false)
   const [callType, setCallType] = useState<'voice' | 'video'>('voice')
   const messagesEndRef = useRef<HTMLDivElement>(null)
