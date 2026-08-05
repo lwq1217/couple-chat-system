@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || '';
+const API_BASE = (import.meta.env.VITE_API_URL as string) || '';
 
 export const api = axios.create({
   baseURL: `${API_BASE}/api`,
@@ -15,7 +15,7 @@ api.interceptors.request.use((config) => {
 });
 
 export const getSocketUrl = () => {
-  return import.meta.env.VITE_SOCKET_URL || 'http://couple-chat-system-production.up.railway.app';
+  return (import.meta.env.VITE_SOCKET_URL as string) || 'http://couple-chat-system-production.up.railway.app';
 };
 
 export const formatTime = (dateStr: string) => {
