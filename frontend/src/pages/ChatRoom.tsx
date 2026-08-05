@@ -42,6 +42,7 @@ export default function ChatRoom() {
   const [typingTimeout, setTypingTimeout] = useState<ReturnType<typeof setTimeout> | null>(null)
   const [showCallModal, setShowCallModal] = useState(false)
   const [callType, setCallType] = useState<'voice' | 'video'>('voice')
+  const [incomingCall, setIncomingCall] = useState<{callerId: number, type: 'voice' | 'video', offer: any} | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -68,11 +69,36 @@ export default function ChatRoom() {
     socket.on('stop_typing', ({ senderId }: { senderId: number }) => {
       if (senderId === friendIdNum) setIsTyping(false)
     })
+////
+      const handleCallOffer = ({ callerId, type, offer }: any) => {
+      if (callerId === friendIdNum) {
+        setIncomingCall({ callerId, type, offer })
+        setCallType(type)
+        setShowCallModal(true)
+      }
+    }
+    socket.on('call_offer', handleCallOffer)
+
+    const handleCallEnd = () => {
+      setShowCallModal(false)
+      setIncomingCall(null)
+    }
+    socket.on('call_end', handleCallEnd)
+
+    const handleCallRejected = () => {
+      alert('对方拒绝了通话')
+      setShowCallModal(false)
+      setIncomingCall(null)
+    }
+    socket.on('call_rejected', handleCallRejected)
 
     return () => {
       socket.off('receive_message')
       socket.off('typing')
       socket.off('stop_typing')
+      socket.off('call_offer', handleCallOffer)
+      socket.off('call_end', handleCallEnd)
+      socket.off('call_rejected', handleCallRejected)
     }
   }, [socket, friendIdNum])
 
@@ -299,10 +325,11 @@ export default function ChatRoom() {
       {/* 通话弹窗 */}
       <CallModal 
         isOpen={showCallModal} 
-        onClose={() => setShowCallModal(false)}
+        onClose={() => { setShowCallModal(false); setIncomingCall(null) }}
         callType={callType}
         friendId={friendIdNum}
         friendName={friend?.nickname || friend?.username || ''}
+        incomingCall={incomingCall}
       />
     </div>
   )
