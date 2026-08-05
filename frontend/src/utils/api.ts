@@ -15,7 +15,7 @@ api.interceptors.request.use((config) => {
 });
 
 export const getSocketUrl = () => {
-  return import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
+  return import.meta.env.VITE_SOCKET_URL || 'http://couple-chat-system-production.up.railway.app';
 };
 
 export const formatTime = (dateStr: string) => {
