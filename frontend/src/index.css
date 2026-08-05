@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Noto Sans SC', sans-serif;
+    background: linear-gradient(135deg, #FFF5F5 0%, #FFE4E1 50%, #FFF0F5 100%);
+    min-height: 100vh;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #FF6B9D;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #FF1744;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md rounded-2xl shadow-lg border border-white/50;
+  }
+
+  .love-btn {
+    @apply bg-gradient-to-r from-love-pink to-love-rose text-white px-6 py-2.5 rounded-full 
+           font-medium shadow-lg shadow-love-pink/30 hover:shadow-xl hover:shadow-love-pink/40 
+           transform hover:-translate-y-0.5 transition-all duration-300;
+  }
+
+  .love-btn-outline {
+    @apply border-2 border-love-pink text-love-pink px-6 py-2.5 rounded-full 
+           font-medium hover:bg-love-pink hover:text-white transition-all duration-300;
+  }
+
+  .chat-bubble-left {
+    @apply bg-white rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm max-w-[70%] text-gray-800;
+  }
+
+  .chat-bubble-right {
+    @apply bg-gradient-to-r from-love-pink to-love-rose text-white rounded-2xl rounded-tr-sm 
+           px-4 py-2.5 shadow-sm max-w-[70%];
+  }
+
+  .nav-item {
+    @apply flex flex-col items-center gap-1 text-gray-400 hover:text-love-pink transition-colors duration-200 cursor-pointer;
+  }
+
+  .nav-item.active {
+    @apply text-love-pink;
+  }
+}

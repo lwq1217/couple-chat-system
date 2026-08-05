@@ -1,0 +1,12 @@
+{
+  "name": "couple-chat-system",
+  "version": "1.0.0",
+  "description": "恋爱聊天系统 - Railway 入口",
+  "scripts": {
+    "start": "cd backend && npm install && node server.js",
+    "build": "echo 'No build step for backend'"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
